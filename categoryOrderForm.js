@@ -3,11 +3,13 @@ function OrderForm() {
     var sheetData = SpreadsheetApp.getActive().getSheetByName('Свод данных')
     var curDate = new Date()
     var idOrder = sheetForm.getRange('C2').getValue()
+    var colStartID = 3
     var dateOrder = sheetForm.getRange('C4').getValue()
-    var lastRow = lastRowForColumn(sheetData, 4)
+    var lastRow = lastRowForColumn(sheetData, 4) + colStartID // смещение вверх
     var needHeadRow = false
     var colStartCategories = 6
     var columnValues = sheetData.getRange(1, colStartCategories, 1, sheetData.getLastColumn()).getValues() // для поиска интервалы
+    var correctColumn = sheetForm.getRange(7, 7, sheetForm.getLastRow(), 1).getValues().filter(el => el[0] == 1).length
 
     var readRecord = function(range) {
         var data = sheetForm.getRange(range).getValues()
@@ -58,15 +60,26 @@ function OrderForm() {
 
     function lastRowForColumn(sheet, column) {
         // Get all data for the given column
-        var data = sheet.getRange(3, column, sheet.getLastRow(), 1)
-            .getValues().filter(String).length
+        var data = sheet.getRange(colStartID, column, sheet.getLastRow(), 1)
+            .getValues().filter(String)
 
-        return data + 1
+        return data.length
     }
 
     // очистка формы
     var clearTable = function() {
         sheetForm.getRange('D7:F' + sheetForm.getLastRow()).clearContent()
+        sheetForm.getRange('C4').clearContent()
+    }
+
+    if (!dateOrder) {
+        Browser.msgBox('Введите дату в ячейку С4');
+        return;
+    }
+
+    if (correctColumn > 0 ) {
+        Browser.msgBox('Проверьте правильность введенного количества');
+        return;
     }
 
     // Go!
@@ -74,9 +87,6 @@ function OrderForm() {
         var record = readRecord('A' + i + ':F' + i)
         if (!record || !record.operation || !record.name || !record.num) continue
         needHeadRow = writeData(record)
-        if (needHeadRow !== false) {
-            sheetForm.getRange('D' + i + ':F' + i).clearContent()
-        }
     }
     if (needHeadRow) {
         sheetData.getRange('C' + lastRow + ':E' + lastRow).setValues([[curDate, idOrder, dateOrder]])
@@ -87,14 +97,11 @@ function OrderForm() {
         var record = readRecord('A' + i + ':F' + i)
         if (!record || !record.operation || !record.name || !record.num) continue
         needHeadRow = writeData(record)
-        if (needHeadRow !== false) {
-            sheetForm.getRange('D' + i + ':F' + i).clearContent()
-        }
     }
     if (needHeadRow) {
         sheetData.getRange('C' + lastRow + ':E' + lastRow).setValues([[curDate, idOrder, dateOrder]])
     }
-    // clearTable();
+    clearTable();
 }
 
 Array.prototype.findIndex = function(search) {
